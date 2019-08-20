@@ -1,77 +1,121 @@
 library(tidyverse)
+library(timetk)
+library(lubridate)
+library(xts)
+library(forecast)
 library(tsibble)
+library(cowplot)
 
 # Import data ---------------------------------------------------------------------------
-path <- "/Users/Carsten/Documents/GitHub/VolatilityModelling/Data/OxfordManRealizedVolatilityIndices.csv"
 
-import <- read_csv(path, skip = 2)
+import <- read_csv("Data/OxfordManRealizedVolatilityIndices.csv", skip = 2)
 
-glimpse(import)
+# clean data ----------------------------------------------------------------------------
 
 vol_data <- import %>%
-   mutate(DateID = parse_date(as.character(DateID), format = "%Y%m%d")) %>% 
-   select(DateID, contains(".r"), -contains(".rk")) %>% 
-   as_tsibble(index = DateID)
+   mutate(
+      date = parse_date(as.character(DateID),format = "%Y%m%d")
+   ) %>% 
+   select(
+      date, 
+      contains(".r"), 
+      -contains(".rk")
+   ) %>% 
+   select(
+      date, 
+      SP500.r = SPX2.r,
+      SP500.rv = SPX2.rv,
+      DJI.r = DJI2.r,
+      DJI.rv = DJI2.rv,
+      FTSE.r = FTSE2.r,
+      FTSE.rv = FTSE2.rv,
+      DAX.r = GDAXI2.r,
+      DAX.rv = GDAXI2.rv,
+      CAC.r = FCHI2.r,
+      CAC.rv = FCHI2.rv,
+      Nikkei.r = N2252.r,
+      Nikkei.rv= N2252.rv
+   )
 
-vol_data
+# interpolate NAs and convert to tsibble for modelling
 
-# Subset RV and Return data, convert to XTS objects
-RV.na <- import %>% select(FCHI2.rv) %>% 
-  as.xts(order.by = import$DateID) # FCHI2.rv -- SPX2.rv, GDAXI2.rv, FTSE2.rv, N2252.rv, DJI2.rv
+vol_tsibble <- tk_xts(data = vol_data, silent = TRUE) %>% 
+   # interpolate NAs
+   na.approx(na.rm = FALSE) %>% 
+   tk_tbl(rename_index = "date") %>% 
+   # pivot_longer
+   gather(
+      key = market_index, 
+      value = value, 
+      -date
+   ) %>% 
+   # filter out any weekends 
+   mutate(day = wday(date, label = TRUE)) %>% 
+   filter(day != "Sat", date <= as.Date("2010-01-01")) %>%
+   # convert to tsibble
+   as_tsibble(
+      key = market_index, 
+      index = date
+   )
+    
+vol_tsibble
 
-returns.na <- import %>% select(FCHI2.r) %>% 
-  as.xts(order.by = import$DateID) # FCHI2.r -- SPX2.r, GDAXI2.r, FTSE2.r, N2252.r, DJI2.r
+# train / test split --------------------------------------------------------------------
 
-# Interpolate NAs linearly
-RV <- na.approx(RV.na)
-returns <- na.approx(returns.na)
-# Clip first and last observation due to NAs
-RV<- RV[-1,]
-RV <- RV[-length(RV),]
-returns <- returns[-1,]
-returns <- returns[-length(returns),]
+# filter for 2004 - March 1, 2009 for modelling
 
-# fix column names
-colnames(RV) <- c("CAC") #"FTSE100", "Nikkei225", "DAX", "DJI", "CAC40"
-colnames(returns) <- c("CAC") #"FTSE100", "Nikkei225", "DAX", "DJI", "CAC40"
+vol_tsibble_2004 <- vol_tsibble %>% 
+   filter_index("2004-01-02" ~ "2009-09-01")
 
-# subset data for training and test sets (4 and 8 yrs Sept.1 2000/2004 - March1, 2009)
-# Test set is 2008-09-01 through 2009-09-01
-start.8 <- as.Date("2000-09-01")
-start.4 <- as.Date("2004-09-01") 
-start.test <- as.Date("2008-09-01")
-end <- as.Date("2009-09-01")
-train.8 <-subset(returns, index(returns)>= start.8 & index(returns) < start.test)
-train.4 <-subset(returns, index(returns)>= start.4 & index(returns) < start.test)
-returns.8 <- subset(returns, index(returns)>= start.8 & index(returns) < end)
-returns.4 <- subset(returns, index(returns)>= start.4 & index(returns) < end)
+# plot data -----------------------------------------------------------------------------
 
-# Subset Volatility Proxies
-RV.8 <- subset(RV, index(RV)>= start.8 & index(RV) < end)
-RV.4 <- subset(RV, index(RV)>= start.4 & index(RV) < end)
-crisis.rv <-subset(RV, index(RV) >= as.Date("2008-09-01") & index(RV) < end)
-crisis.r <-subset(returns, index(returns)>= start.test & index(returns) < end) # subset of returns for test set
-s.crisis.r <- crisis.r^2 # squared returns for test set
+filter(vol_tsibble_2004, !str_detect(market_index, "rv")) %>% 
+   ggplot(aes(x = date, y = value)) +
+   geom_line() +
+   facet_wrap(~market_index) +
+   labs(title = "Stock Market Indices: Daily Returns 2000 - 2010",
+        x = NULL,
+        y = "Daily Return") +
+   theme_minimal() +
+   theme(axis.text.x = element_text(angle = 45),
+         strip.background = element_rect(fill = "grey90"))
 
-# Plot data
-plot.zoo(returns.8)
-plot.zoo(RV.8)
-plot.zoo(crisis.r)
-plot.zoo(crisis.rv)
+filter(vol_tsibble, str_detect(market_index, "rv")) %>% 
+ggplot(aes(x = date, y = value)) +
+   geom_line() +
+   facet_wrap(~market_index) +
+   labs(title = "Stock Market Indices: Realized Volatility 2000 - 2010",
+        x = NULL,
+        y = "Realized Volatility") +
+   theme_minimal() +
+   theme(axis.text.x = element_text(angle = 45),
+         strip.background = element_rect(fill = "grey90"))
 
-# Plot ACFS
-# ACF of returns
-par(mfrow = c(3,2))
-Acf.returns <- Acf(returns.8) %>% tidy()
+# ACF plots of Realized Volatility   
 
-# ACFs of squared returns
-Acf.returns <- Acf(returns.8^2, lag.max = 50) %>% tidy()
+# names of ACFs to plot
+acfs <- unique(vol_tsibble_2004$market_index) %>% 
+   str_subset(".r$")
 
-# ACF returns during crisis
-Acf.returns.c <- Acf(crisis.r^2, lag.max = 50) %>% tidy()
+acf_tsibble <- vol_tsibble_2004 %>% 
+   spread(market_index, value) %>% 
+   select(date, ends_with(".r")) %>% 
+   # square returns for ACF plots
+   mutate_at(.vars = vars(ends_with(".r")),
+             ~ .^2)
 
-# reset plots
-par(mfrow=c(1,1))
+acf_plots <- map(.x = acfs, ~ggAcf(acf_tsibble[.], lag.max = 50) + 
+                              labs(title = NULL, 
+                                   subtitle = paste0(str_remove(., ".r"), " squared returns")))
+
+# squared returns show strong evidence of volatility clustering
+plot_grid(plotlist = acf_plots, ncol = 3)
+
+
+
+
+
+
 
 # Fit AR 1 and simple mean. Simple Mean has higher AIC
 fit1 <- Arima(train.8, order = c(1,0,0), include.mean = FALSE)
@@ -83,8 +127,8 @@ fit2
 #                           ACF of squared resids are zero (AutocorTest) 
 #                        2) Lagrange Multiplier Test (engle 1982) (ArchTest)
 #                           See Tsay book 134 and Tsay (2005) 101-102
-AutocorTest(fit1$residuals^2, lag=12, type = "Ljung-Box")  
-ArchTest(fit2$residuals^2, lags=12, demean = FALSE)
+AutocorTest(fit1$residuals^2, lag = 12, type = "Ljung-Box")  
+ArchTest(fit2$residuals^2, lags = 12, demean = FALSE)
 
 
 # Model selection: Which Model has Best In-Sample Fit?
@@ -98,9 +142,12 @@ fit.list <- list()
 # Fit Arch(1:5)
 for(p in arch.order){
   arch.spec <- ugarchspec(variance.model = list(garchOrder = c(p,0)),
-                          mean.model = list(armaOrder = c(0,0), include.mean = FALSE), 
+                          mean.model = list(armaOrder = c(0,0), 
+                                            include.mean = FALSE), 
                           distribution.model = "std")
+  
   arch.fit <- ugarchfit(spec = arch.spec, data = train.8, solver = "hybrid")
+  
   fit.list[[model.count]] <- arch.fit
   model.count <- model.count + 1
 }
@@ -333,10 +380,10 @@ legend("topleft", legend = names(vol.plot),
 # achieved by a model/strategy/proxy triplet. A model that provides a smaller 
 # average loss is more accurate and therefore preferred. 
 
-#Tsay pg 143 for Forecasting and Equations example 3.1
+# Tsay pg 143 for Forecasting and Equations example 3.1
 
 # GARCH Modeling
-#Engle (1982) and Bollerslev (1986) introduced GARCH models—these account for the volatility clustering that is often seen in the return series of market-priced assets. An example is the popular GARCH(1,1) model:
-#where ht is the variance at time t conditional on past information, and εt is the residual at time t. The three parameters of the model are α, β and ω—there would also generally be a parameter for the mean of the series.
-#Given an estimate of the parameters for a model, it is desirable to determine if the model adequately explains the variance process. A common approach is to divide each residual by the estimated standard deviation for that time point, and square these standardized residuals. Finally perform a Ljung-Box test on the squared standardized residuals (minus their mean). If the statistic is large, then there is evidence that the model is inadequate. Wong and Li (1995) studied the rank Ljung-Box test in this setting.
-#Consider the example of the S&P 500 for dates from 2 January 1985 through 31 December 2001. The return series for this data has 4292 observations. We’ll start with a six-parameter model. The Ljung-Box test statistic with 15 lags for the model is 30.57, giving a p-value of 1%. This is as we expect since the model is known not be very good—it is a GARCH(0,4) model (that is, an ARCH(4) model) assuming a Gaussian distribution for the residuals. This model has four lags of the squared residual and no lags of the conditional variance.
+# Engle (1982) and Bollerslev (1986) introduced GARCH models—these account for the volatility clustering that is often seen in the return series of market-priced assets. An example is the popular GARCH(1,1) model:
+# where ht is the variance at time t conditional on past information, and εt is the residual at time t. The three parameters of the model are α, β and ω—there would also generally be a parameter for the mean of the series.
+# Given an estimate of the parameters for a model, it is desirable to determine if the model adequately explains the variance process. A common approach is to divide each residual by the estimated standard deviation for that time point, and square these standardized residuals. Finally perform a Ljung-Box test on the squared standardized residuals (minus their mean). If the statistic is large, then there is evidence that the model is inadequate. Wong and Li (1995) studied the rank Ljung-Box test in this setting.
+# Consider the example of the S&P 500 for dates from 2 January 1985 through 31 December 2001. The return series for this data has 4292 observations. We’ll start with a six-parameter model. The Ljung-Box test statistic with 15 lags for the model is 30.57, giving a p-value of 1%. This is as we expect since the model is known not be very good—it is a GARCH(0,4) model (that is, an ARCH(4) model) assuming a Gaussian distribution for the residuals. This model has four lags of the squared residual and no lags of the conditional variance.

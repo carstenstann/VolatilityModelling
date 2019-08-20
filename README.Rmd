@@ -1,12 +1,9 @@
 ---
 title: "Rolling Volatility Forecasts in the Midst of Crisis"
-author: "Carsten Stann"
-date: "7/5/2019"
 output: rmarkdown::github_document
 editor_options: 
   chunk_output_type: console
 ---
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
