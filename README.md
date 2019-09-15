@@ -7,14 +7,13 @@ Volatility permeates the economy. It influences the pricing of assets
 and plays a prominent role in financial decision-making. One area of
 application is Value-at-Risk (VaR) modelling, which seeks to quantify
 the potential financial losses and the probability of their occurance.
-Firms and regulators alike use VaR as a risk management tool. In fact,
-since Basel II, banks have been required to deliver daily VaR estimates
-of portfolios to regulators. Since the groundbreaking work of Engle
-(1982), many different approaches have been developed to model and
-forecast volatility. This analysis assesses the performance of a wide
-set of popular univariate volatiltiy models in terms of daily VaR
-forecasts for 6 major stock market indices, and considers how dimensions
-such as sample length and parameterization affect VaR forecasts.
+Firms and regulators alike use VaR as a risk management tool. Since the
+groundbreaking work of Engle (1982), many different approaches have been
+developed to model and forecast volatility. This analysis assesses the
+performance of a wide set of popular univariate volatiltiy models in
+terms of daily VaR forecasts for 6 major stock market indices, and
+considers how dimensions such as sample length and parameterization
+affect VaR forecasts.
 
 ## Data
 
