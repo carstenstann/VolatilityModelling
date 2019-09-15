@@ -1,4 +1,4 @@
-Rolling Volatility Forecasts in the Midst of Crisis
+An Evaluation of Value-at-Risk Forecasting Methods
 ================
 
 ## Introduction
@@ -22,7 +22,7 @@ This analysis considers daily prices of 6 major stock market indices:
   - S\&P 500
   - Dow Jones Industrial Average
   - FTSE 100
-  - DAX PERFORMANCE-INDEX
+  - DAX Performance-Index
   - CAC 40
   - Nikkei 225
 
