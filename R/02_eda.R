@@ -27,6 +27,7 @@ nested_returns
 indices %>% 
    tk_tbl(rename_index = "date") %>% 
    gather(market_index, price, -date) %>% 
+   mutate(market_index = fct_relabel(market_index, ~str_remove(., ".Adjusted"))) %>% 
 ggplot(aes(x = date, y = price)) +
    geom_line() +
    facet_wrap(~market_index, scale = "free_y") +
@@ -41,7 +42,9 @@ ggsave("./plots/price_by_index.png", width = 12, height = 7, dpi = 320)
 
 # returns
 nested_returns %>% 
-   unnest() %>% 
+   unnest(cols = data) %>% 
+   ungroup() %>% 
+   mutate(market_index = fct_relabel(market_index, ~str_remove(., ".Adjusted"))) %>% 
 ggplot(aes(x = date, y = return)) +
    geom_line() +
    facet_wrap(~market_index) +

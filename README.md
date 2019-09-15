@@ -1,8 +1,61 @@
 Rolling Volatility Forecasts in the Midst of Crisis
 ================
 
-Volatility permeates the economy. It influences the pricing of assets, options and derivatives as well as portfolio formation. Volatility forecasting, therefore, plays a prominent role in financial decision-making. While it has been shown that one-day ahead volatility forecasts are surprisingly accurate, longer horizon forecasts are more relevant for institutions trading illiquid assets. Generally, models estimated during normal times perform poorly during sudden volatility shocks. In many cases, positions can take days if not weeks to unwind, necessitating quality longer-term volatility forecasts.
+## Introduction
 
-All data was sourced from the Oxford-Man Institute of Quantitative Finance's [Realized Library](https://realized.oxford-man.ox.ac.uk/).
+Volatility permeates the economy. It influences the pricing of assets
+and plays a prominent role in financial decision-making. One area of
+application is Value-at-Risk (VaR) modelling, which seeks to quantify
+the potential financial losses and the probability of their occurance.
+Firms and regulators alike use VaR as a risk management tool. In fact,
+since Basel II, banks have been required to deliver daily VaR estimates
+of portfolios to regulators. Since the groundbreaking work of Engle
+(1982), many different approaches have been developed to model and
+forecast volatility. This analysis assesses the performance of a wide
+set of popular univariate volatiltiy models in terms of daily VaR
+forecasts for 6 major stock market indices, and considers how dimensions
+such as sample length and parameterization affect VaR forecasts.
 
-References: Heber, Gerd, Asger Lunde, Neil Shephard and Kevin K. Sheppard (2009) "Oxford-Man Institute's realized library", Oxford-Man Institute, University of Oxford.
+## Data
+
+This analysis considers daily prices of 6 major stock market indices:
+
+  - S\&P 500
+  - Dow Jones Industrial Average
+  - FTSE 100
+  - DAX PERFORMANCE-INDEX
+  - CAC 40
+  - Nikkei 225
+
+All data is retrieved from Yahoo using the `quantmod` package for the
+period January 1, 2019 to September 15, 2019. The level as well as daily
+log-returns of each index is plotted below.
+
+**Stock Market Indices Daily Price: 2000 - 2019**
+<img src="plots/README/README-price_by_index-1.png" width="100%" />
+
+**Stock Market Index Returns: 2000 - 2019**
+<img src="plots/README/README-log_return_by_index-1.png" width="100%" />
+
+Each log-return series exhibits heteroscedasticity or volatiltiy
+clustering, the phenomenon first described by Mandelbrot (1963): “large
+changes tend to be followed by large changes of either sign, and small
+changes tend to be followed by small changes.” Periods of high
+volatility are clearly visible in late 2008 as well as in 2002.
+
+The ACF and PACF plots of each index’s squared returns show serial
+correlations, indicating daily returns are not independent and
+signalling the presence of
+ARCH-effects.
+
+<img src="plots/README/README-acf_returns_by_index-1.png" width="100%" />
+
+<img src="plots/README/README-pacf_squared_returns-1.png" width="100%" />
+
+## Models
+
+The following models are evaluated:
+
+  - ARCH (Engle, 1982)
+  - GARCH (Bollerslev, 1986)
+  - TGARCH Zakoian (1994)

@@ -6,14 +6,137 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, dpi=300, fig.height = 4, fig.path = "plots/README/README-")
+
+source("./R/01_import_and_clean.R")
+
+library(tidyverse)
+library(forecast)
+library(dynlm)
+library(cowplot)
+library(GGally)
+library(lmtest)
+library(FinTS)
+library(broom)
+
 ```
 
-Volatility permeates the economy. It influences the pricing of assets, options and derivatives as well as portfolio formation. Volatility forecasting, therefore, plays a prominent role in financial decision-making. While it has been shown that one-day ahead volatility forecasts are surprisingly accurate, longer horizon forecasts are more relevant for institutions trading illiquid assets. Generally, models estimated during normal times perform poorly during sudden volatility shocks. In many cases, positions can take days if not weeks to unwind, necessitating quality longer-term volatility forecasts. 
+## Introduction 
 
-All data was sourced from the Oxford-Man Institute of Quantitative Finance's [Realized Library](https://realized.oxford-man.ox.ac.uk/).
+Volatility permeates the economy. It influences the pricing of assets and plays a prominent role in financial decision-making. One area of application is Value-at-Risk (VaR) modelling, which seeks to quantify the potential financial losses and the probability of their occurance. Firms and regulators alike use VaR as a risk management tool. In fact, since Basel II, banks have been required to deliver daily VaR estimates of portfolios to regulators. Since the groundbreaking work of Engle (1982), many different approaches have been developed to model and forecast volatility. This analysis assesses the performance of a wide set of popular univariate volatiltiy models in terms of daily VaR forecasts for 6 major stock market indices, and considers how dimensions such as sample length and parameterization affect VaR forecasts. 
 
-References:
-Heber, Gerd, Asger Lunde, Neil Shephard and Kevin K. Sheppard (2009) "Oxford-Man Institute's realized library", Oxford-Man Institute, University of Oxford. 
+## Data
 
- 
+This analysis considers daily prices of 6 major stock market indices:
+
+   * S&P 500
+   * Dow Jones Industrial Average
+   * FTSE 100
+   * DAX PERFORMANCE-INDEX
+   * CAC 40
+   * Nikkei 225
+   
+All data is retrieved from Yahoo using the `quantmod` package for the period January 1, 2019 to September 15, 2019. The level as well as daily log-returns of each index is plotted below.
+   
+**Stock Market Indices Daily Price: 2000 - 2019**
+```{r, price_by_index, echo = FALSE, warnings = FALSE, out.width ='100%'}
+# Stock Market Indices Daily Price: 2000 - 2019
+indices %>% 
+   tk_tbl(rename_index = "date") %>% 
+   gather(market_index, price, -date) %>% 
+   mutate(market_index = fct_relabel(market_index, ~str_remove(., ".Adjusted"))) %>% 
+ggplot(aes(x = date, y = price)) +
+   geom_line() +
+   facet_wrap(~market_index, scale = "free_y") +
+   labs(x = NULL,
+        y = "Price (local currency)") +
+   theme_minimal() +
+   theme(axis.text.x = element_text(angle = 45),
+         strip.background = element_rect(fill = "grey90"))
+```
+
+**Stock Market Index Returns: 2000 - 2019**
+``` {r, log_return_by_index, echo = FALSE, out.width ='100%'}
+# Stock Market Index Returns: 2000 - 2019
+nested_returns %>% 
+   unnest(cols = data) %>% 
+   ungroup() %>% 
+   mutate(market_index = fct_relabel(market_index, ~str_remove(., ".Adjusted"))) %>% 
+ggplot(aes(x = date, y = return)) +
+   geom_line() +
+   facet_wrap(~market_index) +
+   labs(x = NULL,
+        y = "Daily Log Return") +
+   theme_minimal() +
+   theme(axis.text.x = element_text(angle = 45),
+         strip.background = element_rect(fill = "grey90"))
+```
+
+Each log-return series exhibits heteroscedasticity or volatiltiy clustering, the phenomenon first described by Mandelbrot (1963): "large changes tend to be followed by large changes of either sign, and small changes tend to be followed by small changes." Periods of high volatility are clearly visible in late 2008 as well as in 2002.
+
+The ACF and PACF plots of each index's squared returns show serial correlations, indicating daily returns are not independent and signalling the presence of ARCH-effects.
+
+```{r, acf_returns_by_index_build, eval = TRUE, include = FALSE}
+# names of ACFs to plot
+squared_returns<- returns %>% 
+   # calculate square returns
+   mutate_if(is.numeric,~ .^2)
+
+acf_squared_returns <- map(names(squared_returns)[-1], ~ggAcf(squared_returns[[.]], lag.max = 50) + 
+                                          labs(title = NULL,
+                                               y = NULL,
+                                               subtitle = paste0(str_remove(., ".Adjusted"), " squared returns")))
+
+# sub grid with ACF plots
+acf_grid <- plot_grid(plotlist = acf_squared_returns, ncol = 3)
+
+# create title 
+title_acf <- ggdraw() + 
+   draw_label("ACF of Stock Market Index Squared Returns",
+              fontface = 'bold',
+              x = 0,
+              hjust = 0,
+              size = 12
+   ) +
+   theme(plot.margin = margin(0, 0, 0, 7))
+```
+
+```{r, acf_returns_by_index, echo = FALSE, out.width ='100%'}
+# plot ACF of squared returns by index
+plot_grid(title_acf, acf_grid, ncol = 1, rel_heights = c(0.05, 1))
+```
+
+```{r, pacf_squared_returns_build, eval = TRUE, include = FALSE}
+pacf_squared_returns <- map(names(squared_returns)[-1], ~ggPacf(squared_returns[[.]], lag.max = 50) + 
+                              labs(title = NULL,
+                                   y = NULL,
+                                   subtitle = paste0(str_remove(., ".Adjusted"), " squared returns")))
+
+# sub grid with ACF plots
+pacf_grid <- plot_grid(plotlist = pacf_squared_returns, ncol = 3)
+
+# create title 
+title_pacf <- ggdraw() + 
+   draw_label("PACF of Stock Market Index Squared Returns",
+              fontface = 'bold',
+              x = 0,
+              hjust = 0,
+              size = 12
+   ) +
+   theme(plot.margin = margin(0, 0, 0, 7))
+```
+
+```{r, pacf_squared_returns, echo = FALSE, out.width ='100%'}
+# plot ACF of squared returns by index
+plot_grid(title_pacf, pacf_grid, ncol = 1, rel_heights = c(0.05, 1))
+```
+
+## Models
+
+The following models are evaluated:
+
+   * ARCH (Engle, 1982)
+   * GARCH (Bollerslev, 1986) 
+   * TGARCH Zakoian (1994)
+   
+   
