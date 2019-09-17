@@ -133,13 +133,36 @@ plot_grid(title_pacf, pacf_grid, ncol = 1, rel_heights = c(0.05, 1))
 
 ## Models
 
-The following models are evaluated:
+This analysis considers ...
 
-   * ARCH (Engle, 1982)
+**GARCH(p,q) of Bollerslev (1986)**
+
+$$r_t = \mu + \epsilon_t ,\ \ \epsilon_t = \sigma_tz_t$$
+$$\sigma^2_t = \omega + \sum_{i=1}^{q} \alpha_i \epsilon^2_{t-i} + \sum^p_{j=1} \beta_j \sigma^2_{t-j}$$
+where $\simga^2_t$ is the conditional variance, $\omega$ a constant term, and $\epsilon^2_t$ are residuals obtained from the mean filtering process. The ARCH and GARCH orders are determined by $q$ and $p$ respectively. $p = 0$ gives the ARCH(q) model as specified by Engle(1982), while $q > 0$ leads the more general GARCH(p,q) specified by Bollerslev (1986). The analysis here considers only the GARCH(1,1). 
+
+$$z_t \sim iid \ N(0,1)$$
+
+**Threshold GARCH (TGARCH) of Zakoian (1994)**
+
+$$r_t = \mu + \epsilon_t ,\ \ \epsilon_t = \sigma_tz_t$$
+$$\sigma_t=\omega + \sum^q_{i=1}\alpha_i(\lvert\epsilon_{t-i}\rvert-\gamma_i\epsilon_{t-i}) + \sum^p_{j=1}\beta_j\sigma_{t-j}  $$
+with $\sigma_t$ denoting the conditional standard deviaion. $\omega$ represents a constant term and $\epsilon_t$ are residuals obtained from the mean model. $q$ and $p$ give the ARCH and GARCH orders respectively. 
+
+$$z_t \sim iid \ N(0,1)$$
+
+
+
+
+
    
-$$\sigma^2_t = \omega + \sum_{i=1}^{q} \alpha_i\epsilon^2_{t-i} + \sum_{i=1}^m \upsilon_t$$
    
-   * GARCH (Bollerslev, 1986) 
-   * TGARCH Zakoian (1994)
+   
+   
+   
+   
+   
+   
+   
    
    
