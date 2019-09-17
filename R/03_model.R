@@ -19,25 +19,25 @@ nested_returns
 # Arch(1:5)
 arch_specs <- map(1:5, ~ugarchspec(variance.model = list(garchOrder = c(.,0)),
                                       mean.model = list(armaOrder = c(0,0),
-                                                        include.mean = FALSE)))
+                                                        include.mean = TRUE)))
 # TARCH(1:5) TGARCH Zakoian (1994)
 tarch_specs <- map(1:5, ~ugarchspec(variance.model = list(model = "apARCH", 
                                                               garchOrder = c(.,0),
                                                               submodel = "TGARCH"),
                                         mean.model = list(armaOrder = c(0,0), 
-                                                          include.mean = FALSE),
+                                                          include.mean = TRUE),
                                         fixed.pars = list(delta = 1)))
 # GARCH(1,1)
 garch_1_1_spec <- ugarchspec(variance.model = list(garchOrder = c(1,1)),
                              mean.model = list(armaOrder = c(0,0), 
-                                               include.mean = FALSE))
+                                               include.mean = TRUE))
 
 # TGARCH(1,1) TGARCH Zakoian (1994)
 tgarch_1_1_spec <- ugarchspec(variance.model = list(model = "apARCH", 
                                                     garchOrder = c(1,0),
                                                     submodel = "TGARCH"),
                               mean.model = list(armaOrder = c(0,0),
-                                                include.mean = FALSE),
+                                                include.mean = TRUE),
                               fixed.pars = list(delta = 1))
 
 # rolling density forecast --------------------------------------------------------------
