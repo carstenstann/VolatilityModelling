@@ -56,3 +56,7 @@ ARCH-effects.
 This analysis considers …
 
 ![models](./plots/Models.png)
+
+## Forecasts
+
+<img src="plots/README/README-forecast_plot-1.png" width="100%" />

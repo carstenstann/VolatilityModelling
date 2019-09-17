@@ -21,6 +21,7 @@ library(GGally)
 library(lmtest)
 library(FinTS)
 library(broom)
+library(rugarch)
 
 ```
 
@@ -139,3 +140,41 @@ plot_grid(title_pacf, pacf_grid, ncol = 1, rel_heights = c(0.05, 1))
 This analysis considers ...
 
 ![models](./plots/Models.png)
+
+## Forecasts
+
+```{r, forecasts, echo=FALSE, out.width='100%', include = FALSE}
+vol <- roll %>% 
+   gather(model, forecast, -c(market_index, data, data_xts)) %>% 
+   separate(model, into = c("model", "sample_size"), sep = "_n") %>% 
+   select(-data, -data_xts) %>% 
+   mutate(sample_size = parse_number(sample_size),
+          report = map(forecast, ~report(., VaR.alpha = 0.05)@forecast$VaR),
+          report = map(report, ~rownames_to_column(., var = "date"))) %>% 
+   unnest(cols = report) %>% 
+   ungroup() %>% 
+   mutate(date = parse_date(date, format = "%Y-%m-%d")) %>% 
+   filter(model %in%  c("arch_3", "tarch_3", "garch_1_1", "tgarch_1_1"), sample_size == 4000) %>% 
+   mutate(model = str_replace(model, "_", " "), 
+          market_index = str_replace(market_index, ".Adjusted", "")) %>% 
+ggplot() +
+   geom_line(aes(x = date, y = realized), alpha = 0.5) +
+   geom_line(aes(x = date, y = `alpha(1%)`), col = "blue", alpha = 0.7) +
+   theme_minimal() +
+   facet_grid(model ~ market_index, scale = "free_y") +
+   labs(title = "One Day Ahead Value-at-Risk Forecasts \nby Market Index and Model Specification",
+        x = NULL,
+        y = "Daily log-return")
+```
+
+```{r, forecast_plot, fig.height =8, echo=FALSE, out.width='100%'}
+vol
+```
+
+
+
+
+
+
+
+
