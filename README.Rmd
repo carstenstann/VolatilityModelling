@@ -136,6 +136,9 @@ plot_grid(title_pacf, pacf_grid, ncol = 1, rel_heights = c(0.05, 1))
 The following models are evaluated:
 
    * ARCH (Engle, 1982)
+   
+$$\sigma^2_t = \omega + \sum_{i=1}^{q} \alpha_i\epsilon^2_{t-i} + \sum_{i=1}^m \upsilon_t$$
+   
    * GARCH (Bollerslev, 1986) 
    * TGARCH Zakoian (1994)
    

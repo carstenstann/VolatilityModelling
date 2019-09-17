@@ -44,7 +44,6 @@ tgarch_1_1_spec <- ugarchspec(variance.model = list(model = "apARCH",
 
 tic()
 roll <- nested_returns %>%
-   filter(market_index == "GSPC.Adjusted") %>% 
    mutate(data_xts = map(data, ~tk_xts(., select = return, date_var = date))) %>% 
    mutate(garch_1_1_n1000 = map(data_xts, ~ugarchroll(spec = garch_1_1_spec, 
                                              data = ., 
@@ -203,55 +202,37 @@ roll %>%
    mutate(report = map(forecast, ~report(., VaR.alpha = 0.05)@forecast$VaR),
           report = map(report, ~rownames_to_column(., var = "date"))) %>% 
    select(market_index, model, sample_size, report) %>% 
-   unnest() %>% 
+   unnest(cols = report) %>% 
    mutate(date = parse_date(date, format = "%Y-%m-%d")) %>% 
+   filter(sample_size == 2000) %>% 
    #filter(model %in% c("garch_1_1")) %>% 
 ggplot() +
    geom_line(aes(x = date, y = realized), alpha = 0.5) +
-   geom_line(aes(x = date, y = `alpha(1%)`, col = factor(sample_size), group = factor((sample_size)))) +
+   geom_line(aes(x = date, y = `alpha(1%)`, col = factor(sample_size), group = factor(sample_size))) +
    theme_minimal() +
-   facet_wrap(~model)
+   facet_wrap(~model, ncol = 4) +
+   labs(x = NULL)
    
 
-
-
-roll$report[[1]]@forecast$VaR %>% str()
-
-report(roll$forecast[[1]])@forecast$VaR
-
-
-roll$garch_1_1_n2000[[1]] %>% plot() #report(VaR.alpha = 0.05)
-
-
-roll$garch_1_1[[3]] %>% report()
-
-roll$garch_1_1[[3]]@forecast$VaR %>% 
-   summarise(sum(realized < `alpha(1%)`))
-
-# report(roll_forecast$arch_1_roll[[1]], type = "VaR", VaR.alpha = 0.05, conf.level = 0.95)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+roll %>% 
+   gather(model, forecast, -c(market_index, data, data_xts)) %>% 
+   separate(model, into = c("model", "sample_size"), sep = "_n") %>% 
+   select(-data, -data_xts) %>% 
+   mutate(sample_size = parse_number(sample_size),
+          report = map(forecast, ~report(., VaR.alpha = 0.05)@forecast$VaR),
+          report = map(report, ~rownames_to_column(., var = "date"))) %>% 
+   unnest(cols = report) %>% 
+   ungroup() %>% 
+   mutate(date = parse_date(date, format = "%Y-%m-%d")) %>% 
+   filter(model %in%  c("arch_3", "tarch_3", "garch_1_1", "tgarch_1_1"), sample_size == 4000) %>% 
+   mutate(model = str_replace(model, "_", " "), 
+          market_index = str_replace(market_index, ".Adjusted", "")) %>% 
+ggplot() +
+   geom_line(aes(x = date, y = realized), alpha = 0.5) +
+   geom_line(aes(x = date, y = `alpha(1%)`), col = "blue", alpha = 0.7) +
+   theme_minimal() +
+   facet_grid(model ~ market_index) +
+   labs(title = "One Day Ahead Value-at-Risk Forecasts by Market Index and Model Specification",
+        x = NULL,
+        y = "Daily log-return")
 
