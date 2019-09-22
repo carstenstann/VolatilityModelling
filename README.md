@@ -7,13 +7,16 @@ Volatility permeates the economy. It influences the pricing of assets
 and plays a prominent role in financial decision-making. One area of
 application is Value-at-Risk (VaR) modelling, which seeks to quantify
 the potential financial losses and the probability of their occurance.
-Firms and regulators alike use VaR as a risk management tool. Since the
-groundbreaking work of Engle (1982), many different approaches have been
-developed to model and forecast volatility. This analysis assesses the
-performance of a wide set of popular univariate volatiltiy models in
-terms of daily VaR forecasts for 6 major stock market indices, and
-considers how dimensions such as sample length and parameterization
-affect VaR forecasts.
+Firms and regulators alike use VaR as a risk management tool. However,
+simple VaR models fail to capture volatility clustering, thereby
+overestimating risk in calm times and underestimating risk in volatile
+times.
+
+One solution to this problem is to feed VaR models conditional
+(time-varying) variance forecasts. This analysis uses eight different
+Generalized Autoregressive Conditional Heteroskedasticity (GARCH) model
+specifications to conduct daily VaR forecasts for 6 major stock market
+indices.
 
 ## Data
 
@@ -53,10 +56,16 @@ ARCH-effects.
 
 ## Models
 
-This analysis considers …
+The analysis considers eight univariate GARCH model specifications. Each
+model assumes returns are normally distributed with a time-varying
+variance.
 
-![models](./plots/Models.png)
+![MeanModel](./plots/README/MeanModel.png)
+
+![models](./plots/README/VolModels.png)
 
 ## Forecasts
+
+All models and forecasts are computed using the `rugarch` package.
 
 <img src="plots/README/README-forecast_plot-1.png" width="100%" />

@@ -9,7 +9,7 @@ editor_options:
 knitr::opts_chunk$set(echo = FALSE, dpi=300, fig.height = 4, fig.path = "plots/README/README-")
 
 #source("./R/01_import_and_clean.R")
-load("~/Documents/GitHub/VolatilityModelling/cache/model_16_19.RData")
+load("~/Documents/GitHub/VolatilityModelling/cache/models_22_19.RData")
 
 library(timetk)
 library(xts)
@@ -142,20 +142,16 @@ plot_grid(title_pacf, pacf_grid, ncol = 1, rel_heights = c(0.05, 1))
 
 The analysis considers eight univariate GARCH model specifications. Each model assumes returns are normally distributed with a time-varying variance.
 
-First, a set of ARCH models, developed by Engle (1982), are tested. These models are similar to the GARCH specification presented below when p = 0. This analysis tests q = {1, 2, 3} for the ARCH(q) specification. 
+![MeanModel](./plots/README/MeanModel.png)
 
-Secondly, the GARCH(p,q) model of Bollerslev (1986) is tested with p and q both equal to 1. 
-
-The previous specifications assume the response to shocks are independent of the sign of the shock (i.e. positive and negative shocks of equal size have equal impact) and are merely a function of shock size. Several GARCH model extensions seek to accomodate asymmetry in the response variable. One such model, proposed by Zakoian (1994), models conditional standard deviation rather than conditional variance, as specificed below. This analysis first considers Threshold ARCH(q) specifications (p = 0) of q = {1, 2, 3} as well as a TGARCH(1, 1) specification. 
-
-![models](./plots/Models.png)
+![models](./plots/README/VolModels.png)
 
 ## Forecasts
 
 All models and forecasts are computed using the `rugarch` package. 
 
 ```{r, forecasts, echo=FALSE, out.width='100%', include = FALSE}
-vol <- roll %>% 
+vol <- rolling_forecasts %>% 
    gather(model, forecast, -c(market_index, data, data_xts)) %>% 
    separate(model, into = c("model", "sample_size"), sep = "_n") %>% 
    select(-data, -data_xts) %>% 
@@ -165,7 +161,7 @@ vol <- roll %>%
    unnest(cols = report) %>% 
    ungroup() %>% 
    mutate(date = parse_date(date, format = "%Y-%m-%d")) %>% 
-   filter(model %in%  c("arch_3", "tarch_3", "garch_1_1", "tgarch_1_1"), sample_size == 4000) %>% 
+   filter(sample_size == 4000) %>% 
    mutate(model = str_replace(model, "_", " "), 
           market_index = str_replace(market_index, ".Adjusted", "")) %>% 
 ggplot() +
