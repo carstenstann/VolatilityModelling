@@ -17,19 +17,7 @@ returns
 nested_returns
 
 # model specifications ------------------------------------------------------------------
-# Arch(1:5)
-arch_specs <- map(1:5, ~ugarchspec(variance.model = list(garchOrder = c(.,0)),
-                                   mean.model = list(armaOrder = c(0,0),
-                                                     include.mean = TRUE),
-                                   distribution.model = "std"))
-# TARCH(1:5) TGARCH Zakoian (1994)
-tarch_specs <- map(1:5, ~ugarchspec(variance.model = list(model = "fGARCH",
-                                                          garchOrder = c(.,0),
-                                                          submodel = "TGARCH"),
-                                    mean.model = list(armaOrder = c(0,0), 
-                                                      include.mean = TRUE),
-                                    fixed.pars = list(delta = 1),
-                                    distribution.model = "std"))
+
 # GARCH(1,1)
 garch_1_1_spec <- ugarchspec(variance.model = list(garchOrder = c(1,1)),
                              mean.model = list(armaOrder = c(0,0), 
@@ -61,65 +49,6 @@ egarch_1_1_spec <- ugarchspec(variance.model = list(model = "eGARCH",
 
 roll_returns <- nested_returns %>%
    mutate(data_xts = map(data, ~tk_xts(., select = return, date_var = date)))
-
-tic()
-arch_roll <- roll_returns %>% 
-   mutate(
-      arch_1_n1000 = map(data_xts, ~ugarchroll(spec = arch_specs[[1]], 
-                                               data = ., 
-                                               forecast.length = 252,
-                                               refit.every = 22, # refit every 4 weeks
-                                               refit.window = "moving",
-                                               window.size = 1000)),
-      arch_2_n1000 = map(data_xts, ~ugarchroll(spec = arch_specs[[2]], 
-                                               data = ., 
-                                               forecast.length = 252,
-                                               refit.every = 22, # refit every 4 weeks
-                                               refit.window = "moving",
-                                               window.size = 1000)),
-      arch_3_n1000 = map(data_xts, ~ugarchroll(spec = arch_specs[[3]], 
-                                               data = ., 
-                                               forecast.length = 252,
-                                               refit.every = 22, # refit every 4 weeks
-                                               refit.window = "moving",
-                                               window.size = 1000)),
-      arch_1_n2000 = map(data_xts, ~ugarchroll(spec = arch_specs[[1]], 
-                                               data = ., 
-                                               forecast.length = 252,
-                                               refit.every = 22, # refit every 4 weeks
-                                               refit.window = "moving",
-                                               window.size = 2000)),
-      arch_2_n2000 = map(data_xts, ~ugarchroll(spec = arch_specs[[2]], 
-                                               data = ., 
-                                               forecast.length = 252,
-                                               refit.every = 22, # refit every 4 weeks
-                                               refit.window = "moving",
-                                               window.size = 2000)),
-      arch_3_n2000 = map(data_xts, ~ugarchroll(spec = arch_specs[[3]], 
-                                               data = ., 
-                                               forecast.length = 252,
-                                               refit.every = 22, # refit every 4 weeks
-                                               refit.window = "moving",
-                                               window.size = 2000)),
-      arch_1_n4000 = map(data_xts, ~ugarchroll(spec = arch_specs[[1]], 
-                                               data = ., 
-                                               forecast.length = 252,
-                                               refit.every = 22, # refit every 4 weeks
-                                               refit.window = "moving",
-                                               window.size = 4000)),
-      arch_2_n4000 = map(data_xts, ~ugarchroll(spec = arch_specs[[2]], 
-                                               data = ., 
-                                               forecast.length = 252,
-                                               refit.every = 22, # refit every 4 weeks
-                                               refit.window = "moving",
-                                               window.size = 4000)),
-      arch_3_n4000 = map(data_xts, ~ugarchroll(spec = arch_specs[[3]], 
-                                               data = ., 
-                                               forecast.length = 252,
-                                               refit.every = 22, # refit every 4 weeks
-                                               refit.window = "moving",
-                                               window.size = 4000)))
-toc()
 
 tic()
 garch_roll <- roll_returns %>% 
@@ -185,46 +114,6 @@ egarch_roll <- roll_returns %>%
                                                        refit.every = 22,
                                                        refit.window = "moving",
                                                        window.size = 4000)))
-toc()
-
-tic()
-tarch_roll <- roll_returns %>% 
-   mutate(tarch_1_n1000 = map(data_xts, ~ugarchroll(spec = tarch_specs[[1]], 
-                                                    data = ., 
-                                                    forecast.length = 252,
-                                                    refit.every = 22, # refit every 4 weeks
-                                                    refit.window = "moving",
-                                                    window.size = 1000)),
-          tarch_2_n1000 = map(data_xts, ~ugarchroll(spec = tarch_specs[[2]], 
-                                                    data = ., 
-                                                    forecast.length = 252,
-                                                    refit.every = 22, # refit every 4 weeks
-                                                    refit.window = "moving",
-                                                    window.size = 1000)),
-          tarch_3_n1000 = map(data_xts, ~ugarchroll(spec = tarch_specs[[3]], 
-                                                    data = ., 
-                                                    forecast.length = 252,
-                                                    refit.every = 22, # refit every 4 weeks
-                                                    refit.window = "moving",
-                                                    window.size = 1000)),
-          tarch_1_n2000 = map(data_xts, ~ugarchroll(spec = tarch_specs[[1]], 
-                                                    data = ., 
-                                                    forecast.length = 252,
-                                                    refit.every = 22, # refit every 4 weeks
-                                                    refit.window = "moving",
-                                                    window.size = 2000)),
-          tarch_2_n2000 = map(data_xts, ~ugarchroll(spec = tarch_specs[[2]], 
-                                                    data = ., 
-                                                    forecast.length = 252,
-                                                    refit.every = 22, # refit every 4 weeks
-                                                    refit.window = "moving",
-                                                    window.size = 2000)),
-          tarch_3_n2000 = map(data_xts, ~ugarchroll(spec = tarch_specs[[3]], 
-                                                    data = ., 
-                                                    forecast.length = 252,
-                                                    refit.every = 22, # refit every 4 weeks
-                                                    refit.window = "moving",
-                                                    window.size = 2000)))
 toc()
 
 tic()
