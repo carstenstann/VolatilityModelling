@@ -17,21 +17,30 @@ knitr::opts_chunk$set(echo = FALSE, dpi=300, fig.height = 4, fig.path = "plots/R
 
 This analysis considers ...
 
+**Mean Model**
+$$r_t = \mu + \epsilon_t ,\ \ \epsilon_t = \sigma_tz_t$$
+$$z_t \sim t(\nu)$$
+with $\nu$ degrees of freedom.
+
 **GARCH(p,q) of Bollerslev (1986)**
 
-$$r_t = \mu + \epsilon_t ,\ \ \epsilon_t = \sigma_tz_t$$
 $$\sigma^2_t = \omega + \sum_{i=1}^{q} \alpha_i \epsilon^2_{t-i} + \sum^p_{j=1} \beta_j \sigma^2_{t-j}$$
 where $r_t$ is the log-return, $\sigma^2_t$ is the conditional variance, $\omega$ a constant term, and $\epsilon^2_t$ are residuals obtained from the mean filtering process. The ARCH and GARCH orders are determined by $q$ and $p$ respectively. $p = 0$ gives the ARCH(q) model as specified by Engle(1982), while $q > 0$ leads the more general GARCH(p,q) specified by Bollerslev (1986). The analysis here considers only the GARCH(1,1). 
 
-$$z_t \sim iid \ N(0,1)$$
+**GJR GARCH(p,q) of Glosten et al.(1993)**
+
+$$\sigma_t^2= \omega + \sum^q_{i=1}(\alpha_i\epsilon_{t-i}^2 -\gamma_iI_{t-i}\epsilon_{t-i}^2) + \sum^p_{j=1}\beta_j\sigma_{t-j}^2$$
+where $\gamma_i$ represents the leverage term and $I$ takes on the value 1 for $\epsilon\leq0$ and 0 otherwise.
+
+**The EGARCH(p,q) of Nelson (1991)**
+
+$$\ln(\sigma_t^2)=\omega +\sum^q_{i=1}[\alpha_i\epsilon_{t-i}+\gamma_i(\lvert\epsilon_{t-i}\rvert - E(\lvert\epsilon_{t-i}\rvert))] + \sum^p_{j=1}\beta_j\ln(\sigma_{t-j}^2)$$
 
 **Threshold GARCH (TGARCH) of Zakoian (1994)**
 
-$$r_t = \mu + \epsilon_t ,\ \ \epsilon_t = \sigma_tz_t$$
-$$\sigma_t=\omega + \sum^q_{i=1}\alpha_i(\lvert\epsilon_{t-i}\rvert-\gamma_i\epsilon_{t-i}) + \sum^p_{j=1}\beta_j\sigma_{t-j}  $$
+$$\sigma_t=\omega + \sum^q_{i=1}\alpha_i(\lvert\epsilon_{t-i}\rvert-\gamma_i\epsilon_{t-i}) + \sum^p_{j=1}\beta_j\sigma_{t-j}$$
 with $\sigma_t$ denoting the conditional standard deviaion. $\omega$ represents a constant term and $\epsilon_t$ are residuals obtained from the mean model. $q$ and $p$ give the ARCH and GARCH orders respectively. 
 
-$$z_t \sim iid \ N(0,1)$$
 
 
 

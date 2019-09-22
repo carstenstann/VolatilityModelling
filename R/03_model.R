@@ -23,7 +23,7 @@ arch_specs <- map(1:5, ~ugarchspec(variance.model = list(garchOrder = c(.,0)),
                                                      include.mean = TRUE),
                                    distribution.model = "std"))
 # TARCH(1:5) TGARCH Zakoian (1994)
-tarch_specs <- map(1:5, ~ugarchspec(variance.model = list(model = "apARCH",
+tarch_specs <- map(1:5, ~ugarchspec(variance.model = list(model = "fGARCH",
                                                           garchOrder = c(.,0),
                                                           submodel = "TGARCH"),
                                     mean.model = list(armaOrder = c(0,0), 
@@ -37,7 +37,7 @@ garch_1_1_spec <- ugarchspec(variance.model = list(garchOrder = c(1,1)),
                              distribution.model = "std")
 
 # TGARCH(1,1) TGARCH Zakoian (1994)
-tgarch_1_1_spec <- ugarchspec(variance.model = list(model = "apARCH", 
+tgarch_1_1_spec <- ugarchspec(variance.model = list(model = "fGARCH", 
                                                     garchOrder = c(1,0),
                                                     submodel = "TGARCH"),
                               mean.model = list(armaOrder = c(0,0),
@@ -45,12 +45,17 @@ tgarch_1_1_spec <- ugarchspec(variance.model = list(model = "apARCH",
                               fixed.pars = list(delta = 1),
                               distribution.model = "std")
 
-# GJRGARCH(1,1) 
+# GJRGARCH(1,1) Glosten et al.(1993)
 gjrgarch_1_1_spec <- ugarchspec(variance.model = list(model = "gjrGARCH",
                                                       garchOrder = c(1,1)),
                                 mean.model = list(armaOrder = c(0,0)),
                                 distribution.model = "std")
 
+# EGARCH Nelson (1991)
+egarch_1_1_spec <- ugarchspec(variance.model = list(model = "eGARCH",
+                                                    garchOrder = c(1,1)),
+                              mean.model = list(armaOrder = c(0,0)),
+                              distribution.model = "std")
 
 # rolling density forecast --------------------------------------------------------------
 
@@ -58,7 +63,6 @@ roll_returns <- nested_returns %>%
    mutate(data_xts = map(data, ~tk_xts(., select = return, date_var = date)))
 
 tic()
-
 arch_roll <- roll_returns %>% 
    mutate(
       arch_1_n1000 = map(data_xts, ~ugarchroll(spec = arch_specs[[1]], 
@@ -115,7 +119,9 @@ arch_roll <- roll_returns %>%
                                                refit.every = 22, # refit every 4 weeks
                                                refit.window = "moving",
                                                window.size = 4000)))
+toc()
 
+tic()
 garch_roll <- roll_returns %>% 
    mutate(garch_1_1_n1000 = map(data_xts, ~ugarchroll(spec = garch_1_1_spec, 
                                                       data = ., 
@@ -135,7 +141,53 @@ garch_roll <- roll_returns %>%
                                                       refit.every = 22, # refit every 4 weeks
                                                       refit.window = "moving",
                                                       window.size = 4000)))
+toc()
 
+tic()
+gjrgarch_roll <- roll_returns %>% 
+   mutate(gjrgarch_1_1_n1000 = map(data_xts, ~ugarchroll(spec = gjrgarch_1_1_spec,
+                                                         data = .,
+                                                         forecast.length = 252,
+                                                         refit.every = 22,
+                                                         refit.window = "moving",
+                                                         window.size = 1000)),
+          gjrgarch_1_1_n2000 = map(data_xts, ~ugarchroll(spec = gjrgarch_1_1_spec,
+                                                         data = .,
+                                                         forecast.length = 252,
+                                                         refit.every = 22,
+                                                         refit.window = "moving",
+                                                         window.size = 2000)),
+          gjrgarch_1_1_n4000 = map(data_xts, ~ugarchroll(spec = gjrgarch_1_1_spec,
+                                                         data = .,
+                                                         forecast.length = 252,
+                                                         refit.every = 22,
+                                                         refit.window = "moving",
+                                                         window.size = 4000)))
+toc()
+
+tic()
+egarch_roll <- roll_returns %>% 
+   mutate(egarch_1_1_n1000 = map(data_xts, ~ugarchroll(spec = egarch_1_1_spec,
+                                                       data = .,
+                                                       forecast.length = 252,
+                                                       refit.every = 22,
+                                                       refit.window = "moving",
+                                                       window.size = 1000)),
+          egarch_1_1_n2000 = map(data_xts, ~ugarchroll(spec = egarch_1_1_spec,
+                                                       data = .,
+                                                       forecast.length = 252,
+                                                       refit.every = 22,
+                                                       refit.window = "moving",
+                                                       window.size = 2000)),
+          egarch_1_1_n4000 = map(data_xts, ~ugarchroll(spec = egarch_1_1_spec,
+                                                       data = .,
+                                                       forecast.length = 252,
+                                                       refit.every = 22,
+                                                       refit.window = "moving",
+                                                       window.size = 4000)))
+toc()
+
+tic()
 tarch_roll <- roll_returns %>% 
    mutate(tarch_1_n1000 = map(data_xts, ~ugarchroll(spec = tarch_specs[[1]], 
                                                     data = ., 
@@ -173,7 +225,9 @@ tarch_roll <- roll_returns %>%
                                                     refit.every = 22, # refit every 4 weeks
                                                     refit.window = "moving",
                                                     window.size = 2000)))
+toc()
 
+tic()
 tgarch_roll <- roll_returns %>% 
    mutate(tgarch_1_1_n1000 = map(data_xts, ~ugarchroll(spec = tgarch_1_1_spec, 
                                                        data = ., 
@@ -193,37 +247,15 @@ tgarch_roll <- roll_returns %>%
                                                        refit.every = 22, # refit every 4 weeks
                                                        refit.window = "moving",
                                                        window.size = 4000)))
-
-gjrgarch_roll <- roll_returns %>% 
-   mutate(gjrgarch_1_1_n1000 = map(data_xts, ~ugarchroll(spec = gjrgarch_1_1_spec,
-                                                         data = .,
-                                                         forecast.length = 252,
-                                                         refit.every = 22,
-                                                         refit.window = "moving",
-                                                         window.size = 1000)),
-          gjrgarch_1_1_n2000 = map(data_xts, ~ugarchroll(spec = gjrgarch_1_1_spec,
-                                                         data = .,
-                                                         forecast.length = 252,
-                                                         refit.every = 22,
-                                                         refit.window = "moving",
-                                                         window.size = 2000)),
-          gjrgarch_1_1_n4000 = map(data_xts, ~ugarchroll(spec = gjrgarch_1_1_spec,
-                                                         data = .,
-                                                         forecast.length = 252,
-                                                         refit.every = 22,
-                                                         refit.window = "moving",
-                                                         window.size = 4000)))
-
-
-
 toc()
 
 # bind models together
-rolling_forecasts <- bind_cols(arch_roll, 
-                               garch_roll[, -c(1:3)],
-                               tarch_roll[, -c(1:3)],
+rolling_forecasts <- bind_cols(#arch_roll, 
+                               garch_roll,
+                               #tarch_roll[, -c(1:3)],
                                tgarch_roll[, -c(1:3)],
-                               gjrgarch_roll[, -c(1:3)])
+                               gjrgarch_roll[, -c(1:3)],
+                               egarch_roll[,-c(1:3)])
 
 # visualize forecasts -------------------------------------------------------------------
 
@@ -256,7 +288,7 @@ rolling_forecasts %>%
    unnest(cols = report) %>% 
    ungroup() %>% 
    mutate(date = parse_date(date, format = "%Y-%m-%d")) %>% 
-   filter(model %in%  c("arch_3", "tarch_3", "garch_1_1", "tgarch_1_1"), sample_size == 2000) %>% 
+   filter(sample_size == 4000) %>% 
    mutate(model = str_replace(model, "_", " "), 
           market_index = str_replace(market_index, ".Adjusted", "")) %>% 
 ggplot() +
