@@ -22,12 +22,15 @@ library(lmtest)
 library(FinTS)
 library(broom)
 library(rugarch)
+library(scales)
 
 ```
 
 ## Introduction 
 
-Volatility permeates the economy. It influences the pricing of assets and plays a prominent role in financial decision-making. One area of application is Value-at-Risk (VaR) modelling, which seeks to quantify the potential financial losses and the probability of their occurance. Firms and regulators alike use VaR as a risk management tool. Since the groundbreaking work of Engle (1982), many different approaches have been developed to model and forecast volatility. This analysis assesses the performance of a wide set of popular univariate volatiltiy models in terms of daily VaR forecasts for 6 major stock market indices, and considers how dimensions such as sample length and parameterization affect VaR forecasts. 
+Volatility permeates the economy. It influences the pricing of assets and plays a prominent role in financial decision-making. One area of application is Value-at-Risk (VaR) modelling, which seeks to quantify the potential financial losses and the probability of their occurance. Firms and regulators alike use VaR as a risk management tool. However, simple VaR models fail to capture volatility clustering, thereby overestimating risk in calm times and underestimating risk in volatile times.
+
+One solution to this problem is to feed VaR models conditional (time-varying) variance forecasts. This analysis uses eight different Generalized Autoregressive Conditional Heteroskedasticity (GARCH) model specifications to conduct daily VaR forecasts for 6 major stock market indices. 
 
 ## Data
 
@@ -137,11 +140,19 @@ plot_grid(title_pacf, pacf_grid, ncol = 1, rel_heights = c(0.05, 1))
 
 ## Models
 
-This analysis considers ...
+The analysis considers eight univariate GARCH model specifications. Each model assumes returns are normally distributed with a time-varying variance.
+
+First, a set of ARCH models, developed by Engle (1982), are tested. These models are similar to the GARCH specification presented below when p = 0. This analysis tests q = {1, 2, 3} for the ARCH(q) specification. 
+
+Secondly, the GARCH(p,q) model of Bollerslev (1986) is tested with p and q both equal to 1. 
+
+The previous specifications assume the response to shocks are independent of the sign of the shock (i.e. positive and negative shocks of equal size have equal impact) and are merely a function of shock size. Several GARCH model extensions seek to accomodate asymmetry in the response variable. One such model, proposed by Zakoian (1994), models conditional standard deviation rather than conditional variance, as specificed below. This analysis first considers Threshold ARCH(q) specifications (p = 0) of q = {1, 2, 3} as well as a TGARCH(1, 1) specification. 
 
 ![models](./plots/Models.png)
 
 ## Forecasts
+
+All models and forecasts are computed using the `rugarch` package. 
 
 ```{r, forecasts, echo=FALSE, out.width='100%', include = FALSE}
 vol <- roll %>% 
@@ -162,19 +173,16 @@ ggplot() +
    geom_line(aes(x = date, y = `alpha(1%)`), col = "blue", alpha = 0.7) +
    theme_minimal() +
    facet_grid(model ~ market_index, scale = "free_y") +
+   scale_x_date(label = date_format("%b-%y"),
+                date_breaks = "3 months") +
    labs(title = "One Day Ahead Value-at-Risk Forecasts \nby Market Index and Model Specification",
         x = NULL,
-        y = "Daily log-return")
+        y = "Daily log-return") +
+   theme(axis.text.x = element_text(angle = 90, vjust = -.01))
 ```
 
-```{r, forecast_plot, fig.height =8, echo=FALSE, out.width='100%'}
+```{r, forecast_plot, fig.height=8, echo=FALSE, out.width='100%'}
 vol
 ```
-
-
-
-
-
-
 
 
