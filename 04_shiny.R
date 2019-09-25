@@ -12,36 +12,37 @@ library(tidyverse)
 library(timetk)
 library(xts)
 library(DT)
+library(highcharter)
+
 
 # UI ------------------------------------------------------------------------------------
 
-ui <- dashboardPage(
+dashboardHeader <- dashboardHeader(title = "VaR Forecasting")
+
+dashboardSidebar <- dashboardSidebar(
    
-   dashboardHeader(title = "VaR Forecasting"),
+   textInput("symb", "Symbol", "SPY"),
    
-   dashboardSidebar(
-      
-      textInput("symb", "Symbol", "SPY"),
-      
-      dateRangeInput(inputId = "dates", 
-                     label = NULL,
-                     start = "2013-01-01",
-                     end = NULL,
-                     format = "yyyy-mm-dd"),
-      
-      actionButton("updateData", "Update Data")
+   dateRangeInput(inputId = "dates", 
+                  label = NULL,
+                  start = "2013-01-01",
+                  end = NULL,
+                  format = "yyyy-mm-dd"),
+   
+   actionButton("updateData", "Update Data")
+)
+
+dashboardBody <- dashboardBody(
+   fluidRow(
+      box(highchartOutput("plot"), width = 12)
    ),
    
-   dashboardBody(
-      fluidRow(
-         box(plotOutput("plot"), width = 12)
-      ),
-      
-      fluidRow(
-         box(DT::dataTableOutput("table"), width = 12)
-      )
+   fluidRow(
+      box(DT::dataTableOutput("table"), width = 12)
    )
 )
+
+ui <- dashboardPage(dashboardHeader, dashboardSidebar, dashboardBody)
 
 server <- function(input, output) {
    
@@ -66,14 +67,14 @@ server <- function(input, output) {
       
    })
    
-   output$plot <- renderPlot({
+   output$plot <- renderHighchart({
       
       input$updateData
          
-      isolate({ plot(Ad(dataInput() )) })
+      #isolate({ plot(Ad(dataInput()), main = input$symb) })
+      isolate({ hchart(dataInput()) })
    
    })
-   
 }
 
 shinyApp(ui, server)
