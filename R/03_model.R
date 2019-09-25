@@ -146,6 +146,16 @@ rolling_forecasts <- bind_cols(#arch_roll,
                                gjrgarch_roll[, -c(1:3)],
                                egarch_roll[,-c(1:3)])
 
+# Compute the 5% value at risk
+normgarchVaR <- quantile(normgarchroll, probs = 0.05)
+sstdgarchVaR <- quantile(sstdgarchroll, probs = 0.05)
+
+# Compute the coverage
+actual <- xts(as.data.frame(normgarchroll)$Realized,time(normgarchVaR))
+mean(actual < normgarchVaR)
+mean(actual < sstdgarchVaR)
+
+
 # visualize forecasts -------------------------------------------------------------------
 
 rolling_forecasts %>% 
@@ -190,4 +200,30 @@ ggplot() +
    labs(title = "One Day Ahead Value-at-Risk Forecasts by Market Index and Model Specification",
         x = NULL,
         y = "Daily log-return")
+
+
+# model averaging
+variance.models <- c("sGARCH", "gjrGARCH")
+distribution.models <- c("norm", "std", "std")
+c <- 1
+for (variance.model in variance.models) {
+   for (distribution.model in distribution.models) {
+      garchspec <- ugarchspec(mean.model = list(armaOrder = c(0, 0)),
+                              variance.model = list(model = variance.model),
+                              distribution.model = distribution.model)
+      garchfit <- ugarchfit(data = msftret, spec = garchspec)
+      if (c==1) {
+         msigma <- sigma(garchfit)
+      } else {
+         msigma <- merge(msigma, sigma(garchfit))
+      } 
+      c <- c + 1
+   }
+}
+
+
+GARCH covariance
+
+msftwmtcov <- msftwmtcor * sigma(msftgarchfit) * sigma(wmtgarchfit)
+
 
