@@ -1,0 +1,10 @@
+name: var_forecast
+title:
+username:
+account: carsten-stann
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1251138
+bundleId: 2448399
+url: https://carsten-stann.shinyapps.io/var_forecast/
+when: 1569532146.95753
